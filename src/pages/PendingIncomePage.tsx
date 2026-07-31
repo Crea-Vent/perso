@@ -109,13 +109,20 @@ function PendingIncomeModal({
   const [amount, setAmount] = useState('')
   const [expectedDate, setExpectedDate] = useState(todayISO())
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setSaving(true)
-    await onSave({ label, type, amount: Number(amount), expectedDate, status: 'pending' })
-    setSaving(false)
-    onClose()
+    setError('')
+    try {
+      await onSave({ label, type, amount: Number(amount), expectedDate, status: 'pending' })
+      onClose()
+    } catch {
+      setError('Une erreur est survenue, réessaie.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -143,6 +150,7 @@ function PendingIncomeModal({
             <Input id="pi-date" type="date" required value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
           </div>
         </div>
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <Button type="submit" disabled={saving} className="mt-2">
           {saving ? 'Ajout…' : 'Ajouter'}
         </Button>

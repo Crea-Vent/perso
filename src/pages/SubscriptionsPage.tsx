@@ -140,22 +140,29 @@ function SubscriptionModal({
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? '')
   const [nextBillingDate, setNextBillingDate] = useState(initial?.nextBillingDate ?? todayISO())
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   const expenseCategories = categories.filter((c) => c.type === 'expense')
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setSaving(true)
-    await onSave({
-      name,
-      amount: Number(amount),
-      frequency,
-      categoryId: categoryId || expenseCategories[0]?.id || '',
-      nextBillingDate,
-      active: initial?.active ?? true,
-    })
-    setSaving(false)
-    onClose()
+    setError('')
+    try {
+      await onSave({
+        name,
+        amount: Number(amount),
+        frequency,
+        categoryId: categoryId || expenseCategories[0]?.id || '',
+        nextBillingDate,
+        active: initial?.active ?? true,
+      })
+      onClose()
+    } catch {
+      setError('Une erreur est survenue, réessaie.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -193,6 +200,7 @@ function SubscriptionModal({
             ))}
           </Select>
         </div>
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <Button type="submit" disabled={saving} className="mt-2">
           {saving ? 'Enregistrement…' : initial ? 'Enregistrer' : 'Ajouter'}
         </Button>

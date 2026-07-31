@@ -120,13 +120,20 @@ function CategoryModal({
   const [type, setType] = useState<CategoryType>(initial?.type ?? 'expense')
   const [color, setColor] = useState(initial?.color ?? COLORS[0])
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setSaving(true)
-    await onSave({ name, type, color })
-    setSaving(false)
-    onClose()
+    setError('')
+    try {
+      await onSave({ name, type, color })
+      onClose()
+    } catch {
+      setError('Une erreur est survenue, réessaie.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -161,6 +168,7 @@ function CategoryModal({
             ))}
           </div>
         </div>
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <Button type="submit" disabled={saving} className="mt-2">
           {saving ? 'Enregistrement…' : initial ? 'Enregistrer' : 'Ajouter'}
         </Button>
