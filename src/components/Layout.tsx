@@ -71,22 +71,23 @@ export function Layout() {
         </div>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-slate-200 bg-white/95 px-1 py-1 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-slate-200 bg-white/95 px-1 py-2 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:hidden">
         {NAV.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
+            aria-label={label}
+            title={label}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-[10px] font-medium ${
+              `flex items-center justify-center rounded-lg p-2.5 ${
                 isActive
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : 'text-slate-500 dark:text-slate-400'
               }`
             }
           >
-            <Icon size={18} />
-            {label}
+            <Icon size={20} />
           </NavLink>
         ))}
       </nav>
