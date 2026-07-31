@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Plus, Repeat, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Repeat, Trash2 } from 'lucide-react'
 import { useCollection } from '../lib/firestore'
 import type { Category, Subscription, SubscriptionFrequency } from '../types'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -15,6 +15,7 @@ export function SubscriptionsPage() {
   const { data: subscriptions, add, update, remove } = useCollection<Subscription>('subscriptions')
   const { data: categories } = useCollection<Category>('categories')
   const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState<Subscription | null>(null)
 
   const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
 
@@ -84,6 +85,12 @@ export function SubscriptionsPage() {
                       {s.active ? 'Actif' : 'Inactif'}
                     </button>
                     <button
+                      onClick={() => setEditing(s)}
+                      className="text-slate-300 hover:text-emerald-500 dark:text-slate-600"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
                       onClick={() => {
                         if (confirm(`Supprimer « ${s.name} » ?`)) remove(s.id)
                       }}
@@ -102,24 +109,36 @@ export function SubscriptionsPage() {
       {open && (
         <SubscriptionModal categories={categories} onClose={() => setOpen(false)} onSave={add} />
       )}
+      {editing && (
+        <SubscriptionModal
+          categories={categories}
+          initial={editing}
+          onClose={() => setEditing(null)}
+          onSave={async (item) => {
+            await update(editing.id, item)
+          }}
+        />
+      )}
     </div>
   )
 }
 
 function SubscriptionModal({
   categories,
+  initial,
   onClose,
   onSave,
 }: {
   categories: Category[]
+  initial?: Subscription
   onClose: () => void
   onSave: (item: Omit<Subscription, 'id'>) => Promise<void>
 }) {
-  const [name, setName] = useState('')
-  const [amount, setAmount] = useState('')
-  const [frequency, setFrequency] = useState<SubscriptionFrequency>('monthly')
-  const [categoryId, setCategoryId] = useState('')
-  const [nextBillingDate, setNextBillingDate] = useState(todayISO())
+  const [name, setName] = useState(initial?.name ?? '')
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : '')
+  const [frequency, setFrequency] = useState<SubscriptionFrequency>(initial?.frequency ?? 'monthly')
+  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? '')
+  const [nextBillingDate, setNextBillingDate] = useState(initial?.nextBillingDate ?? todayISO())
   const [saving, setSaving] = useState(false)
 
   const expenseCategories = categories.filter((c) => c.type === 'expense')
@@ -133,14 +152,14 @@ function SubscriptionModal({
       frequency,
       categoryId: categoryId || expenseCategories[0]?.id || '',
       nextBillingDate,
-      active: true,
+      active: initial?.active ?? true,
     })
     setSaving(false)
     onClose()
   }
 
   return (
-    <Modal title="Nouvel abonnement" onClose={onClose}>
+    <Modal title={initial ? "Modifier l'abonnement" : 'Nouvel abonnement'} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
           <Label htmlFor="sub-name">Nom</Label>
@@ -175,7 +194,7 @@ function SubscriptionModal({
           </Select>
         </div>
         <Button type="submit" disabled={saving} className="mt-2">
-          {saving ? 'Ajout…' : 'Ajouter'}
+          {saving ? 'Enregistrement…' : initial ? 'Enregistrer' : 'Ajouter'}
         </Button>
       </form>
     </Modal>
