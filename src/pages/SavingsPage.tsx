@@ -111,18 +111,25 @@ function SavingsModal({
   const [targetAmount, setTargetAmount] = useState(initial?.targetAmount ? String(initial.targetAmount) : '')
   const [note, setNote] = useState(initial?.note ?? '')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setSaving(true)
-    await onSave({
-      name,
-      amount: Number(amount),
-      targetAmount: targetAmount ? Number(targetAmount) : undefined,
-      note: note || undefined,
-    })
-    setSaving(false)
-    onClose()
+    setError('')
+    try {
+      await onSave({
+        name,
+        amount: Number(amount),
+        targetAmount: targetAmount ? Number(targetAmount) : undefined,
+        note: note || undefined,
+      })
+      onClose()
+    } catch {
+      setError('Une erreur est survenue, réessaie.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -146,6 +153,7 @@ function SavingsModal({
           <Label htmlFor="sav-note">Note</Label>
           <Input id="sav-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optionnel" />
         </div>
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <Button type="submit" disabled={saving} className="mt-2">
           {saving ? 'Enregistrement…' : 'Enregistrer'}
         </Button>

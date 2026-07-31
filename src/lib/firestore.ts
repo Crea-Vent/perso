@@ -12,6 +12,14 @@ import {
 import { db } from '../firebase/config'
 import { useAuth } from '../contexts/AuthContext'
 
+// Firestore rejects `undefined` field values, so drop them before writing —
+// this lets optional fields be set to `undefined` to mean "not set".
+function stripUndefined<T extends object>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== undefined),
+  ) as T
+}
+
 export function useCollection<T extends { id: string }>(
   name: string,
   orderByField?: string,
@@ -42,12 +50,12 @@ export function useCollection<T extends { id: string }>(
 
   async function add(item: Omit<T, 'id'>) {
     if (!user) throw new Error('Not authenticated')
-    await addDoc(collection(db, 'users', user.uid, name), item)
+    await addDoc(collection(db, 'users', user.uid, name), stripUndefined(item))
   }
 
   async function update(id: string, item: Partial<Omit<T, 'id'>>) {
     if (!user) throw new Error('Not authenticated')
-    await updateDoc(doc(db, 'users', user.uid, name, id), item)
+    await updateDoc(doc(db, 'users', user.uid, name, id), stripUndefined(item))
   }
 
   async function remove(id: string) {

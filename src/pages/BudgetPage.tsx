@@ -212,21 +212,28 @@ function TransactionModal({
   const [categoryId, setCategoryId] = useState('')
   const [description, setDescription] = useState('')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   const filtered = categories.filter((c) => c.type === type)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setSaving(true)
-    await onSave({
-      type,
-      date,
-      amount: Number(amount),
-      categoryId: categoryId || filtered[0]?.id || '',
-      description,
-    })
-    setSaving(false)
-    onClose()
+    setError('')
+    try {
+      await onSave({
+        type,
+        date,
+        amount: Number(amount),
+        categoryId: categoryId || filtered[0]?.id || '',
+        description,
+      })
+      onClose()
+    } catch {
+      setError('Une erreur est survenue, réessaie.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -269,6 +276,7 @@ function TransactionModal({
             ))}
           </Select>
         </div>
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <Button type="submit" disabled={saving} className="mt-2">
           {saving ? 'Ajout…' : 'Ajouter'}
         </Button>

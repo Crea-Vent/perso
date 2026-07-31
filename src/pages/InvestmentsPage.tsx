@@ -102,19 +102,26 @@ function InvestmentModal({
   const [currentValue, setCurrentValue] = useState('')
   const [date, setDate] = useState(todayISO())
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setSaving(true)
-    await onSave({
-      name,
-      kind,
-      amountInvested: Number(amountInvested),
-      currentValue: Number(currentValue || amountInvested),
-      date,
-    })
-    setSaving(false)
-    onClose()
+    setError('')
+    try {
+      await onSave({
+        name,
+        kind,
+        amountInvested: Number(amountInvested),
+        currentValue: Number(currentValue || amountInvested),
+        date,
+      })
+      onClose()
+    } catch {
+      setError('Une erreur est survenue, réessaie.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -142,6 +149,7 @@ function InvestmentModal({
           <Label htmlFor="inv-date">Date</Label>
           <Input id="inv-date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <Button type="submit" disabled={saving} className="mt-2">
           {saving ? 'Ajout…' : 'Ajouter'}
         </Button>
