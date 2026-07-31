@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Plus, Tags, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Tags, Trash2 } from 'lucide-react'
 import { useCollection } from '../lib/firestore'
 import type { Category, CategoryType } from '../types'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -15,8 +15,9 @@ const COLORS = [
 ]
 
 export function CategoriesPage() {
-  const { data: categories, add, remove } = useCollection<Category>('categories')
+  const { data: categories, add, update, remove } = useCollection<Category>('categories')
   const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState<Category | null>(null)
 
   const income = categories.filter((c) => c.type === 'income')
   const expense = categories.filter((c) => c.type === 'expense')
@@ -34,11 +35,20 @@ export function CategoriesPage() {
       />
 
       <div className="grid gap-6 sm:grid-cols-2">
-        <CategoryGroup title="Revenus" categories={income} onDelete={remove} />
-        <CategoryGroup title="Dépenses" categories={expense} onDelete={remove} />
+        <CategoryGroup title="Revenus" categories={income} onEdit={setEditing} onDelete={remove} />
+        <CategoryGroup title="Dépenses" categories={expense} onEdit={setEditing} onDelete={remove} />
       </div>
 
       {open && <CategoryModal onClose={() => setOpen(false)} onSave={add} />}
+      {editing && (
+        <CategoryModal
+          initial={editing}
+          onClose={() => setEditing(null)}
+          onSave={async (item) => {
+            await update(editing.id, item)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -46,10 +56,12 @@ export function CategoriesPage() {
 function CategoryGroup({
   title,
   categories,
+  onEdit,
   onDelete,
 }: {
   title: string
   categories: Category[]
+  onEdit: (category: Category) => void
   onDelete: (id: string) => void
 }) {
   return (
@@ -71,14 +83,22 @@ function CategoryGroup({
                 />
                 {c.name}
               </div>
-              <button
-                onClick={() => {
-                  if (confirm(`Supprimer la catégorie « ${c.name} » ?`)) onDelete(c.id)
-                }}
-                className="text-slate-300 hover:text-red-500 dark:text-slate-600"
-              >
-                <Trash2 size={14} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onEdit(c)}
+                  className="text-slate-300 hover:text-emerald-500 dark:text-slate-600"
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm(`Supprimer la catégorie « ${c.name} » ?`)) onDelete(c.id)
+                  }}
+                  className="text-slate-300 hover:text-red-500 dark:text-slate-600"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -88,15 +108,17 @@ function CategoryGroup({
 }
 
 function CategoryModal({
+  initial,
   onClose,
   onSave,
 }: {
+  initial?: Category
   onClose: () => void
   onSave: (item: Omit<Category, 'id'>) => Promise<void>
 }) {
-  const [name, setName] = useState('')
-  const [type, setType] = useState<CategoryType>('expense')
-  const [color, setColor] = useState(COLORS[0])
+  const [name, setName] = useState(initial?.name ?? '')
+  const [type, setType] = useState<CategoryType>(initial?.type ?? 'expense')
+  const [color, setColor] = useState(initial?.color ?? COLORS[0])
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
@@ -108,7 +130,7 @@ function CategoryModal({
   }
 
   return (
-    <Modal title="Nouvelle catégorie" onClose={onClose}>
+    <Modal title={initial ? 'Modifier la catégorie' : 'Nouvelle catégorie'} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
           <Label htmlFor="cat-name">Nom</Label>
@@ -140,7 +162,7 @@ function CategoryModal({
           </div>
         </div>
         <Button type="submit" disabled={saving} className="mt-2">
-          {saving ? 'Ajout…' : 'Ajouter'}
+          {saving ? 'Enregistrement…' : initial ? 'Enregistrer' : 'Ajouter'}
         </Button>
       </form>
     </Modal>
